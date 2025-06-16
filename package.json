@@ -1,0 +1,20 @@
+{
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "name": "g-loc",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsc --watch"
+  },
+  "repository": "git@github.com:cetusw/g-loc.git",
+  "author": "cetusw <kugelev.m@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/vis": "^4.21.27",
+    "vis-network": "^9.1.12"
+  }
+}
