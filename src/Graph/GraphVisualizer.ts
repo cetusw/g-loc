@@ -56,7 +56,9 @@ class GraphVisualizer {
     }
 
     public InitializeRobotViewGraph(): void {
-        if (this.robotVisNetwork) this.robotVisNetwork.destroy();
+        if (this.robotVisNetwork) {
+            this.robotVisNetwork.destroy();
+        }
 
         this.robotVisNodes = new DataSet();
         this.robotVisEdges = new DataSet();

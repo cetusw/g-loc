@@ -4,6 +4,7 @@ import {GraphGenerator} from '../Graph/GraphGenerator.js';
 import {GraphParser} from '../Graph/GraphParser.js';
 import {GraphVisualizer} from '../Graph/GraphVisualizer.js';
 import {GraphLocalization} from '../Localization/GraphLocalization.js';
+import {DepthFirstSearch} from '../DepthFirstSearch/DepthFirstSearch.js';
 import {
     TRAVERSED_EDGE_COLOR,
     DEFAULT_EDGE_COLOR,
@@ -19,6 +20,7 @@ class SimulationManager {
     private graphParser: GraphParser;
     private graphVisualizer: GraphVisualizer;
     private localizationAlgorithm!: GraphLocalization;
+    private traversalStrategy!: DepthFirstSearch;
 
     private currentGraph!: Graph;
 
@@ -62,7 +64,7 @@ class SimulationManager {
 
     private BindEventListeners(): void {
         this.generateGraphButton.onclick = () => this.HandleGenerateGraphClick();
-        this.autoMoveButton.onclick = () => this.StartExploration();
+        this.autoMoveButton.onclick = () => this.StartExploration(parseInt(this.stepDelayInput.value));
         this.resetSimulationButton.onclick = () => this.ResetSimulation();
         this.loadMatrixButton.onclick = () => this.HandleLoadMatrixGraphClick();
     }
@@ -75,6 +77,7 @@ class SimulationManager {
         this.currentRobotVertex = null;
 
         this.currentGraph = graphToDisplay;
+        this.traversalStrategy = new DepthFirstSearch(this.currentGraph);
 
         this.graphVisualizer.InitializeMainGraph(this.currentGraph);
         this.graphVisualizer.InitializeRobotViewGraph();
@@ -102,7 +105,6 @@ class SimulationManager {
 
         this.currentRobotVertex = robotStartVertex;
 
-        this.graphVisualizer.UpdateVertexColor(this.currentRobotVertex.id, CURRENT_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
         this.graphVisualizer.AddOrUpdateRobotVertex(this.currentRobotVertex, CURRENT_VERTEX_COLOR);
 
         console.log(`Robot started in vertex: ${this.currentRobotVertex.id}`);
@@ -198,7 +200,6 @@ class SimulationManager {
 
         this.currentRobotVertex = toVertex;
 
-        this.graphVisualizer.UpdateVertexColor(toVertex.id, CURRENT_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
         this.graphVisualizer.mainVisNodes.update({id: toVertex.id, label: `${toVertex.label} (D:${toVertex.degree})`});
 
         this.graphVisualizer.AddOrUpdateRobotVertex(toVertex, CURRENT_VERTEX_COLOR);
@@ -234,9 +235,7 @@ class SimulationManager {
         allVertices.forEach(vertex => {
             let nodeColor = DEFAULT_VERTEX_COLOR;
 
-            if (vertex.id === this.currentRobotVertex?.id) {
-                nodeColor = CURRENT_VERTEX_COLOR;
-            } else if (localizedVertex && vertex.id === localizedVertex.id) {
+            if (localizedVertex && vertex.id === localizedVertex.id) {
                 nodeColor = LOCALIZED_VERTEX_COLOR;
             } else {
                 const isActiveHypothesis = currentHypotheses.some(h => h.vertexId === vertex.id && h.probability > 0);
@@ -259,53 +258,39 @@ class SimulationManager {
         });
     }
 
-    private StartExploration(): void {
+    public StartExploration(stepDelay: number): void {
         if (this.nextMoveTimer !== null) {
             clearTimeout(this.nextMoveTimer);
         }
 
-        const MoveNext = () => {
-            if (!this.currentRobotVertex || this.localizationAlgorithm.GetLocalizedVertex()) {
-                if (this.nextMoveTimer !== null) {
-                    clearTimeout(this.nextMoveTimer);
-                }
-                console.log("Exploration finished: robot localized or no current vertex.");
-                return;
-            }
-
-            const neighbors = this.currentGraph.GetNeighbors(this.currentRobotVertex.id);
-            let nextVertexId: string | null = null;
-
-            if (neighbors.length > 0) {
-                const unvisitedEdges = neighbors.filter(nId => {
-                    const edge = this.currentGraph.GetEdge(this.currentRobotVertex!.id, nId);
-                    return edge && !edge.isTraversed;
-                });
-
-                if (unvisitedEdges.length > 0) {
-                    nextVertexId = unvisitedEdges[Math.floor(Math.random() * unvisitedEdges.length)];
-                } else {
-                    console.log(`Robot at ${this.currentRobotVertex.id}: All outgoing edges traversed. Choosing a random one.`);
-                    nextVertexId = neighbors[Math.floor(Math.random() * neighbors.length)];
-                }
-
-                if (nextVertexId) {
-                    this.SimulateMove(this.currentRobotVertex.id, nextVertexId);
-                }
-            } else {
-                if (this.nextMoveTimer !== null) {
-                    clearTimeout(this.nextMoveTimer);
-                }
-                return;
-            }
-
-            let stepDelay = parseInt(this.stepDelayInput.value);
-            this.nextMoveTimer = setTimeout(MoveNext, stepDelay);
-        };
-
         if (!this.currentRobotVertex) {
             return;
         }
+
+        this.traversalStrategy.InitializeDFS(this.currentRobotVertex.id);
+
+        const MoveNext = () => {
+            if (this.localizationAlgorithm.GetLocalizedVertex()) {
+                if (this.nextMoveTimer !== null) {
+                    clearTimeout(this.nextMoveTimer);
+                }
+                return;
+            }
+
+            const currentVertexId = this.currentRobotVertex!.id;
+            const nextVertexId = this.traversalStrategy.GetNextMove(currentVertexId);
+
+            if (!nextVertexId) {
+                if (this.nextMoveTimer !== null) {
+                    clearTimeout(this.nextMoveTimer);
+                }
+                return;
+            }
+
+            this.SimulateMove(currentVertexId, nextVertexId);
+
+            this.nextMoveTimer = setTimeout(MoveNext, stepDelay);
+        };
 
         this.nextMoveTimer = setTimeout(MoveNext, 500);
     }
