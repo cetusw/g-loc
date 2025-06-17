@@ -17,7 +17,6 @@ class GraphLocalization {
     private InitializeHypotheses(currentVertex: Vertex): void {
         const allVertices = this.graph.GetAllVertices();
         if (allVertices.length === 0) {
-            console.warn("Graph has no vertices for hypothesis initialization.");
             this.hypotheses = [];
             return;
         }
@@ -36,7 +35,7 @@ class GraphLocalization {
         console.log("Initial hypotheses IDs:", this.hypotheses.map(h => h.vertexId).join(', '));
     }
 
-    public Move(observedFromVertexDegree: number, observedEdgeWeight: number, observedToVertexDegree: number): string | null {
+    public Move(observedFromVertexDegree: number, observedEdgeWeight: number, observedToVertexDegree: number, currentVertex: Vertex): string | null {
         this.observedSequence.push({
             fromVertexDegree: observedFromVertexDegree,
             edgeWeight: observedEdgeWeight,
@@ -55,6 +54,10 @@ class GraphLocalization {
             console.log("Localization failed: No hypotheses left.");
             this.localizedVertex = null;
             return null;
+        } else if (remainingHypotheses.length === this.graph.numVertices) {
+            this.localizedVertex = currentVertex;
+            console.log(`Robot localized at vertex: ${this.localizedVertex.id}`);
+            return this.localizedVertex.id;
         } else {
             this.localizedVertex = null;
             return null;
@@ -72,7 +75,6 @@ class GraphLocalization {
         for (const oldHypothesis of this.hypotheses) {
             const currentHypotheticalVertex = this.graph.GetVertex(oldHypothesis.vertexId);
             if (!currentHypotheticalVertex) {
-                console.warn(`Hypothetical vertex ${oldHypothesis.vertexId} not found`);
                 continue;
             }
 
@@ -119,10 +121,10 @@ class GraphLocalization {
         this.hypotheses = Array.from(uniqueHypothesisMap.values());
 
         if (this.hypotheses.length === 0 && this.observedSequence.length > 0) {
-            console.error("Localization failed. There are no remaining hypotheses.");
+            console.log("Localization failed. There are no remaining hypotheses.");
             this.localizedVertex = null;
         }
-        console.log("Localization: New active hypotheses after filtering and deduplication:", this.hypotheses.map(h => h.vertexId).join(', '));
+        console.log("New active hypotheses after filtering and deduplication:", this.hypotheses.map(h => h.vertexId).join(', '));
     }
 
     public GetHypotheses(): HypotheticalVertex[] {

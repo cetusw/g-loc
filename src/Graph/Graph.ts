@@ -20,7 +20,6 @@ class Graph {
 
     public AddVertex(vertex: Vertex): void {
         if (this.vertices.has(vertex.id)) {
-            console.warn(`Vertex with ID ${vertex.id} already exists.`);
             return;
         }
         this.vertices.set(vertex.id, vertex);
@@ -37,7 +36,6 @@ class Graph {
 
     public AddEdge(fromVertexId: string, toVertexId: string, weight: number): void {
         if (fromVertexId === toVertexId) {
-            console.warn(`Cannot add edge from vertex ${fromVertexId} to itself.`);
             return;
         }
 
@@ -45,13 +43,11 @@ class Graph {
         const toVertex = this.vertices.get(toVertexId);
 
         if (!fromVertex || !toVertex) {
-            console.error(`One or both vertices for edge (${fromVertexId}, ${toVertexId}) not found.`);
             return;
         }
 
         const edgeId = [fromVertexId, toVertexId].sort().join('-');
         if (this.edges.has(edgeId)) {
-            console.warn(`Edge between ${fromVertexId} and ${toVertexId} (ID: ${edgeId}) already exists.`);
             return;
         }
 

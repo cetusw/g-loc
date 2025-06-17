@@ -88,7 +88,7 @@ button {
     border: none;
     border-radius: 5px;
     transition: background-color 0.3s ease;
-    margin: 5px; /* Добавлено для отступов между кнопками */
+    margin: 5px;
 }
 
 .controls button:hover {
@@ -114,75 +114,46 @@ hr {
     margin: 20px 0;
 }
 
-/* Новые стили для полей ввода */
 .input-group {
-    display: flex; /* Используем Flexbox для выравнивания */
-    align-items: center; /* Выравнивание по центру по вертикали */
-    margin-bottom: 10px; /* Отступ между группами ввода */
-    width: 100%; /* Занимаем всю доступную ширину в родительском контейнере */
-    max-width: 90%; /* Ограничиваем максимальную ширину для компактности */
-    margin-left: auto; /* Центрируем группы ввода */
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    width: 100%;
+    max-width: 90%;
+    margin-left: auto;
     margin-right: auto;
 }
 
 .input-group label {
-    flex-basis: 180px; /* Фиксированная ширина для меток */
-    min-width: 100px; /* Минимальная ширина, чтобы текст не обрезался */
-    margin-right: 10px; /* Отступ между меткой и полем ввода */
-    text-align: right; /* Выравнивание текста метки по правому краю */
+    flex-basis: 180px;
+    min-width: 100px;
+    margin-right: 10px;
+    text-align: right;
     font-size: 0.95em;
     color: #555;
 }
 
 .input-group input[type="number"] {
-    flex-grow: 1; /* Поле ввода будет занимать оставшееся пространство */
-    padding: 8px 12px; /* Внутренние отступы */
-    border: 1px solid #ccc; /* Тонкая серая рамка */
-    border-radius: 4px; /* Слегка скругленные углы */
-    font-size: 1em; /* Размер шрифта */
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* Легкая внутренняя тень */
-    transition: border-color 0.3s ease, box-shadow 0.3s ease; /* Плавный переход для фокуса */
-    min-width: 80px; /* Минимальная ширина для полей ввода */
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    min-width: 80px;
 }
 
 .input-group input[type="number"]:focus {
-    border-color: #007bff; /* Цвет рамки при фокусе */
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); /* Легкая внешняя тень при фокусе */
-    outline: none; /* Убираем стандартную обводку браузера */
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    outline: none;
 }
 
-/* Стили для начальной вершины, чтобы она также была выровнена */
 .controls .input-group {
-    max-width: 400px; /* Чуть шире для этой группы */
+    max-width: 400px;
 }
 
 .controls .input-group label {
-    flex-basis: 180px; /* Та же ширина для меток */
-}
-
-
-@media (max-width: 900px) {
-    .main-container {
-        flex-direction: column;
-        align-items: center;
-    }
-    .graph-panel {
-        min-width: unset;
-        width: 100%;
-    }
-    .input-group {
-        flex-direction: column; /* На маленьких экранах метка над полем ввода */
-        align-items: flex-start;
-        max-width: unset; /* Убираем ограничение ширины */
-    }
-    .input-group label {
-        text-align: left; /* Выравнивание метки по левому краю */
-        margin-right: 0;
-        margin-bottom: 5px; /* Отступ между меткой и полем ввода */
-        flex-basis: auto;
-        min-width: auto;
-    }
-    .input-group input[type="number"] {
-        width: 100%; /* Поле ввода занимает всю ширину */
-    }
+    flex-basis: 180px;
 }

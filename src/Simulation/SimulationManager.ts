@@ -75,7 +75,6 @@ class SimulationManager {
         this.currentRobotVertex = null;
 
         this.currentGraph = graphToDisplay;
-        console.log(`Graph loaded: ${this.currentGraph.numVertices} vertices, ${this.currentGraph.numEdges} edges.`);
 
         this.graphVisualizer.InitializeMainGraph(this.currentGraph);
         this.graphVisualizer.InitializeRobotViewGraph();
@@ -87,14 +86,12 @@ class SimulationManager {
         let robotStartVertex: Vertex | undefined;
 
         if (allVertices.length === 0) {
-            console.warn("Graph is empty, cannot initialize robot.");
             return;
         }
 
         if (initialVertexId) {
             robotStartVertex = this.currentGraph.GetVertex(initialVertexId);
             if (!robotStartVertex) {
-                console.warn(`Initial vertex ID ${initialVertexId} not found. Choosing random start.`);
                 robotStartVertex = allVertices[Math.floor(Math.random() * allVertices.length)];
             }
         } else {
@@ -103,18 +100,15 @@ class SimulationManager {
 
         this.localizationAlgorithm = new GraphLocalization(this.currentGraph, robotStartVertex);
 
-        if (robotStartVertex) {
-            this.currentRobotVertex = robotStartVertex;
+        this.currentRobotVertex = robotStartVertex;
 
-            this.graphVisualizer.UpdateVertexColor(this.currentRobotVertex.id, CURRENT_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
-            this.graphVisualizer.AddOrUpdateRobotVertex(this.currentRobotVertex, CURRENT_VERTEX_COLOR);
+        this.graphVisualizer.UpdateVertexColor(this.currentRobotVertex.id, CURRENT_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
+        this.graphVisualizer.AddOrUpdateRobotVertex(this.currentRobotVertex, CURRENT_VERTEX_COLOR);
 
-            console.log(`Robot started in vertex: ${this.currentRobotVertex.id}`);
+        console.log(`Robot started in vertex: ${this.currentRobotVertex.id}`);
 
-            this.UpdateHypothesisVisualization();
-        } else {
-            console.error("Could not determine a starting vertex for the robot. Initialization aborted.");
-        }
+        this.UpdateHypothesisVisualization();
+
     }
 
     public HandleGenerateGraphClick(): void {
@@ -189,7 +183,6 @@ class SimulationManager {
 
     private SimulateMove(fromId: string, toId: string): void {
         if (!this.currentGraph || !this.localizationAlgorithm || !this.currentRobotVertex) {
-            console.error("Simulation not fully initialized.");
             return;
         }
 
@@ -198,10 +191,6 @@ class SimulationManager {
         const edge = this.currentGraph.GetEdge(fromId, toId)!;
 
         this.graphVisualizer.UpdateVertexColor(fromVertex.id, VISITED_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
-        this.graphVisualizer.mainVisNodes.update({
-            id: fromVertex.id,
-            label: `${fromVertex.label} (D:${fromVertex.degree})`
-        });
         fromVertex.isVisited = true;
 
         this.graphVisualizer.UpdateEdgeColor(edge.id, TRAVERSED_EDGE_COLOR, this.graphVisualizer.mainVisEdges);
@@ -216,12 +205,11 @@ class SimulationManager {
         this.graphVisualizer.AddOrUpdateRobotVertex(fromVertex, VISITED_VERTEX_COLOR);
         this.graphVisualizer.AddOrUpdateRobotEdge(fromVertex.id, toVertex.id, edge.weight, TRAVERSED_EDGE_COLOR);
 
-        const localizedVertexId = this.localizationAlgorithm.Move(fromVertex.degree, edge.weight, toVertex.degree);
+        const localizedVertexId = this.localizationAlgorithm.Move(fromVertex.degree, edge.weight, toVertex.degree, toVertex);
 
         this.UpdateHypothesisVisualization();
 
         if (localizedVertexId) {
-            console.log(`Robot successfully localized at vertex: ${localizedVertexId}`);
             this.graphVisualizer.DisplayFullGraphInRobotView(this.currentGraph, localizedVertexId);
             const localizedVertex = this.currentGraph.GetVertex(localizedVertexId)!;
 
@@ -308,7 +296,6 @@ class SimulationManager {
                 if (this.nextMoveTimer !== null) {
                     clearTimeout(this.nextMoveTimer);
                 }
-                console.warn("Robot at dead end: no neighbors to move to.");
                 return;
             }
 
@@ -317,7 +304,6 @@ class SimulationManager {
         };
 
         if (!this.currentRobotVertex) {
-            console.warn("Current Vertex is null.");
             return;
         }
 
