@@ -1,20 +1,20 @@
-import { Graph } from '../Graph/Graph.js';
-import { Vertex } from '../Vertex/Vertex.js';
+import {Graph} from '../Graph/Graph.js';
+import {Vertex} from '../Vertex/Vertex.js';
 
-import { SequenceEntry, HypotheticalVertex } from './Types.js';
+import {SequenceEntry, HypotheticalVertex} from './Types.js';
 
 class GraphLocalization {
     private graph: Graph;
     private observedSequence: SequenceEntry[] = [];
     private hypotheses: HypotheticalVertex[] = [];
-    private _localizedVertex: Vertex | null = null;
+    private localizedVertex: Vertex | null = null;
 
-    constructor(graph: Graph) {
+    constructor(graph: Graph, currentVertex: Vertex) {
         this.graph = graph;
-        this.InitializeHypotheses();
+        this.InitializeHypotheses(currentVertex);
     }
 
-    private InitializeHypotheses(): void {
+    private InitializeHypotheses(currentVertex: Vertex): void {
         const allVertices = this.graph.GetAllVertices();
         if (allVertices.length === 0) {
             console.warn("Graph has no vertices for hypothesis initialization.");
@@ -22,13 +22,18 @@ class GraphLocalization {
             return;
         }
 
-        this.hypotheses = allVertices.map(vertex => ({
+        let initialHypotheticalVertices = allVertices.filter(vertex => {
+            return vertex.degree === currentVertex.degree;
+        });
+
+        this.hypotheses = initialHypotheticalVertices.map(vertex => ({
             vertexId: vertex.id,
             pathSequence: [],
             probability: 1,
         }));
-        this._localizedVertex = null;
-        console.log("Localization: Initial hypotheses IDs:", this.hypotheses.map(h => h.vertexId).join(', '));
+
+        this.localizedVertex = null;
+        console.log("Initial hypotheses IDs:", this.hypotheses.map(h => h.vertexId).join(', '));
     }
 
     public Move(observedFromVertexDegree: number, observedEdgeWeight: number, observedToVertexDegree: number): string | null {
@@ -43,15 +48,15 @@ class GraphLocalization {
         const remainingHypotheses = this.hypotheses.filter(h => h.probability > 0);
 
         if (remainingHypotheses.length === 1) {
-            this._localizedVertex = this.graph.GetVertex(remainingHypotheses[0].vertexId)!;
-            console.log(`Localization: Robot localized at vertex: ${this._localizedVertex.id}`);
-            return this._localizedVertex.id;
+            this.localizedVertex = this.graph.GetVertex(remainingHypotheses[0].vertexId)!;
+            console.log(`Robot localized at vertex: ${this.localizedVertex.id}`);
+            return this.localizedVertex.id;
         } else if (remainingHypotheses.length === 0) {
-            console.warn("Localization failed: No hypotheses left.");
-            this._localizedVertex = null;
+            console.log("Localization failed: No hypotheses left.");
+            this.localizedVertex = null;
             return null;
         } else {
-            this._localizedVertex = null;
+            this.localizedVertex = null;
             return null;
         }
     }
@@ -65,13 +70,9 @@ class GraphLocalization {
         }
 
         for (const oldHypothesis of this.hypotheses) {
-            if (oldHypothesis.probability === 0) {
-                continue;
-            }
-
             const currentHypotheticalVertex = this.graph.GetVertex(oldHypothesis.vertexId);
             if (!currentHypotheticalVertex) {
-                console.warn(`Localization: Hypothetical vertex ${oldHypothesis.vertexId} not found. Dropping hypothesis.`);
+                console.warn(`Hypothetical vertex ${oldHypothesis.vertexId} not found`);
                 continue;
             }
 
@@ -97,7 +98,7 @@ class GraphLocalization {
                 }
 
                 const matchEdge = lastObservedEntry.edgeWeight === hypotheticalEdge.weight;
-                const matchDegree = lastObservedEntry.toVertexDegree === nextHypotheticalVertex.degree; // Match with observedToVertexDegree
+                const matchDegree = lastObservedEntry.toVertexDegree === nextHypotheticalVertex.degree;
 
                 if (matchEdge && matchDegree) {
                     potentialNewHypotheses.push({
@@ -119,7 +120,7 @@ class GraphLocalization {
 
         if (this.hypotheses.length === 0 && this.observedSequence.length > 0) {
             console.error("Localization failed. There are no remaining hypotheses.");
-            this._localizedVertex = null;
+            this.localizedVertex = null;
         }
         console.log("Localization: New active hypotheses after filtering and deduplication:", this.hypotheses.map(h => h.vertexId).join(', '));
     }
@@ -129,7 +130,7 @@ class GraphLocalization {
     }
 
     public GetLocalizedVertex(): Vertex | null {
-        return this._localizedVertex;
+        return this.localizedVertex;
     }
 }
 

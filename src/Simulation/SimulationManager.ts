@@ -80,9 +80,10 @@ class SimulationManager {
         this.graphVisualizer.InitializeMainGraph(this.currentGraph);
         this.graphVisualizer.InitializeRobotViewGraph();
 
-        this.localizationAlgorithm = new GraphLocalization(this.currentGraph);
-
         const allVertices = this.currentGraph.GetAllVertices();
+        for (const vertex of allVertices) {
+            vertex.isVisited = false;
+        }
         let robotStartVertex: Vertex | undefined;
 
         if (allVertices.length === 0) {
@@ -100,6 +101,8 @@ class SimulationManager {
             robotStartVertex = allVertices[Math.floor(Math.random() * allVertices.length)];
         }
 
+        this.localizationAlgorithm = new GraphLocalization(this.currentGraph, robotStartVertex);
+
         if (robotStartVertex) {
             this.currentRobotVertex = robotStartVertex;
 
@@ -109,7 +112,6 @@ class SimulationManager {
             console.log(`Robot started in vertex: ${this.currentRobotVertex.id}`);
 
             this.UpdateHypothesisVisualization();
-
         } else {
             console.error("Could not determine a starting vertex for the robot. Initialization aborted.");
         }
