@@ -83,7 +83,7 @@ button {
     padding: 10px 15px;
     font-size: 1em;
     cursor: pointer;
-    background-color: #4CAF50;
+    background-color: #18a847;
     color: white;
     border: none;
     border-radius: 5px;
@@ -92,7 +92,7 @@ button {
 }
 
 .controls button:hover {
-    background-color: #45a049;
+    background-color: #18a847;
 }
 
 .controls textarea {

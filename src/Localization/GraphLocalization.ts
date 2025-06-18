@@ -28,7 +28,6 @@ class GraphLocalization {
         this.hypotheses = initialHypotheticalVertices.map(vertex => ({
             vertexId: vertex.id,
             pathSequence: [],
-            probability: 1,
         }));
 
         this.localizedVertex = null;
@@ -44,7 +43,7 @@ class GraphLocalization {
 
         this.UpdateHypotheses();
 
-        const remainingHypotheses = this.hypotheses.filter(h => h.probability > 0);
+        const remainingHypotheses = this.hypotheses;
 
         if (remainingHypotheses.length === 1) {
             this.localizedVertex = this.graph.GetVertex(remainingHypotheses[0].vertexId)!;
@@ -106,7 +105,6 @@ class GraphLocalization {
                     potentialNewHypotheses.push({
                         vertexId: nextHypotheticalVertex.id,
                         pathSequence: [...oldHypothesis.pathSequence, lastObservedEntry],
-                        probability: 1,
                     });
                 }
             }
@@ -124,10 +122,11 @@ class GraphLocalization {
             console.log("Localization failed. There are no remaining hypotheses.");
             this.localizedVertex = null;
         }
-        console.log("New active hypotheses after filtering and deduplication:", this.hypotheses.map(h => h.vertexId).join(', '));
+        console.log("New active hypotheses after filtering:", this.hypotheses.map(h => h.vertexId).join(', '));
     }
 
     public GetHypotheses(): HypotheticalVertex[] {
+        console.log(this.hypotheses);
         return this.hypotheses;
     }
 

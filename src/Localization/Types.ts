@@ -7,7 +7,6 @@ type SequenceEntry = {
 type HypotheticalVertex = {
     vertexId: string;
     pathSequence: SequenceEntry[];
-    probability: number;
 }
 
 export {

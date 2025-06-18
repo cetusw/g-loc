@@ -238,7 +238,7 @@ class SimulationManager {
             if (localizedVertex && vertex.id === localizedVertex.id) {
                 nodeColor = LOCALIZED_VERTEX_COLOR;
             } else {
-                const isActiveHypothesis = currentHypotheses.some(h => h.vertexId === vertex.id && h.probability > 0);
+                const isActiveHypothesis = currentHypotheses.some(hypo => hypo.vertexId === vertex.id);
                 if (isActiveHypothesis) {
                     nodeColor = HYPOTHESIS_VERTEX_COLOR;
                 } else if (vertex.isVisited) {
