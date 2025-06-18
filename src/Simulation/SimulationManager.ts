@@ -5,6 +5,7 @@ import {GraphParser} from '../Graph/GraphParser.js';
 import {GraphVisualizer} from '../Graph/GraphVisualizer.js';
 import {GraphLocalization} from '../Localization/GraphLocalization.js';
 import {DepthFirstSearch} from '../DepthFirstSearch/DepthFirstSearch.js';
+import {ChinesePostmanSolver} from '../EulerTour/ChinesePostmanSolver.js';
 import {
     TRAVERSED_EDGE_COLOR,
     DEFAULT_EDGE_COLOR,
@@ -13,6 +14,8 @@ import {
     LOCALIZED_VERTEX_COLOR,
     DEFAULT_VERTEX_COLOR,
     HYPOTHESIS_VERTEX_COLOR,
+    POSTMAN_PATH_VERTEX_COLOR,
+    POSTMAN_PATH_EDGE_COLOR,
 } from '../utils/constants.js';
 
 class SimulationManager {
@@ -21,11 +24,13 @@ class SimulationManager {
     private graphVisualizer: GraphVisualizer;
     private localizationAlgorithm!: GraphLocalization;
     private traversalStrategy!: DepthFirstSearch;
+    private chinesePostmanSolver!: ChinesePostmanSolver;
 
     private currentGraph!: Graph;
 
     private currentRobotVertex: Vertex | null = null;
     private nextMoveTimer: number | null = null;
+    private postmanAnimationTimer: number | null = null;
 
     private adjacencyMatrixInput: HTMLTextAreaElement;
     private initialVertexInput: HTMLInputElement;
@@ -33,12 +38,14 @@ class SimulationManager {
     private autoMoveButton: HTMLButtonElement;
     private resetSimulationButton: HTMLButtonElement;
     private loadMatrixButton: HTMLButtonElement;
+    private findPostmanPathButton: HTMLButtonElement;
 
     private numVerticesInput: HTMLInputElement;
     private numAdditionalEdgesInput: HTMLInputElement;
     private minWeightInput: HTMLInputElement;
     private maxWeightInput: HTMLInputElement;
     private stepDelayInput: HTMLInputElement;
+    private postmanAnimationDelayInput: HTMLInputElement;
 
     constructor() {
         this.graphGenerator = new GraphGenerator();
@@ -51,13 +58,14 @@ class SimulationManager {
         this.autoMoveButton = document.getElementById('autoMoveButton') as HTMLButtonElement;
         this.resetSimulationButton = document.getElementById('resetSimulationButton') as HTMLButtonElement;
         this.loadMatrixButton = document.getElementById('loadMatrixButton') as HTMLButtonElement;
+        this.findPostmanPathButton = document.getElementById('findPostmanPathButton') as HTMLButtonElement;
 
         this.numVerticesInput = document.getElementById('numVerticesInput') as HTMLInputElement;
         this.numAdditionalEdgesInput = document.getElementById('numAdditionalEdgesInput') as HTMLInputElement;
         this.minWeightInput = document.getElementById('minWeightInput') as HTMLInputElement;
         this.maxWeightInput = document.getElementById('maxWeightInput') as HTMLInputElement;
         this.stepDelayInput = document.getElementById('stepDelayInput') as HTMLInputElement;
-
+        this.postmanAnimationDelayInput = document.getElementById('postmanAnimationDelayInput') as HTMLInputElement;
 
         this.BindEventListeners();
     }
@@ -67,6 +75,7 @@ class SimulationManager {
         this.autoMoveButton.onclick = () => this.StartExploration(parseInt(this.stepDelayInput.value));
         this.resetSimulationButton.onclick = () => this.ResetSimulation();
         this.loadMatrixButton.onclick = () => this.HandleLoadMatrixGraphClick();
+        this.findPostmanPathButton.onclick = () => this.HandleFindPostmanPathClick();
     }
 
     public InitializeSimulation(graphToDisplay: Graph, initialVertexId?: string): void {
@@ -74,10 +83,15 @@ class SimulationManager {
             clearTimeout(this.nextMoveTimer);
             this.nextMoveTimer = null;
         }
+        if (this.postmanAnimationTimer !== null) {
+            clearTimeout(this.postmanAnimationTimer);
+            this.postmanAnimationTimer = null;
+        }
         this.currentRobotVertex = null;
 
         this.currentGraph = graphToDisplay;
         this.traversalStrategy = new DepthFirstSearch(this.currentGraph);
+        this.chinesePostmanSolver = new ChinesePostmanSolver(this.currentGraph);
 
         this.graphVisualizer.InitializeMainGraph(this.currentGraph);
         this.graphVisualizer.InitializeRobotViewGraph();
@@ -89,6 +103,7 @@ class SimulationManager {
         let robotStartVertex: Vertex | undefined;
 
         if (allVertices.length === 0) {
+            this.findPostmanPathButton.disabled = true;
             return;
         }
 
@@ -110,7 +125,7 @@ class SimulationManager {
         console.log(`Robot started in vertex: ${this.currentRobotVertex.id}`);
 
         this.UpdateHypothesisVisualization();
-
+        this.findPostmanPathButton.disabled = true;
     }
 
     public HandleGenerateGraphClick(): void {
@@ -154,6 +169,10 @@ class SimulationManager {
         if (this.nextMoveTimer !== null) {
             clearTimeout(this.nextMoveTimer);
             this.nextMoveTimer = null;
+        }
+        if (this.postmanAnimationTimer !== null) {
+            clearTimeout(this.postmanAnimationTimer);
+            this.postmanAnimationTimer = null;
         }
 
         const matrixString = this.adjacencyMatrixInput.value;
@@ -224,6 +243,8 @@ class SimulationManager {
                 clearTimeout(this.nextMoveTimer);
                 this.nextMoveTimer = null;
             }
+
+            this.findPostmanPathButton.disabled = false;
         }
     }
 
@@ -294,6 +315,85 @@ class SimulationManager {
 
         this.nextMoveTimer = setTimeout(MoveNext, 500);
     }
+
+    private HandleFindPostmanPathClick(): void {
+        if (!this.currentGraph) {
+            alert("Сначала сгенерируйте или загрузите граф.");
+            return;
+        }
+        if (!this.localizationAlgorithm.GetLocalizedVertex()) {
+            alert("Пожалуйста, сначала выполните локализацию робота.");
+            return;
+        }
+
+        if (this.postmanAnimationTimer !== null) {
+            clearTimeout(this.postmanAnimationTimer);
+        }
+
+        const eulerTourPath = this.chinesePostmanSolver.FindChinesePostmanTour();
+
+        if (eulerTourPath && eulerTourPath.length > 0) {
+            const animationDelay = parseInt(this.postmanAnimationDelayInput.value);
+            this.VisualizeChinesePostmanPath(eulerTourPath, animationDelay);
+        } else {
+            alert("Не удалось найти путь китайского почтальона. Возможно, граф несвязен или произошла ошибка.");
+            console.error("Failed to find Chinese Postman Tour.");
+        }
+    }
+
+    private VisualizeChinesePostmanPath(path: string[], delayMs: number): void {
+        this.currentGraph.GetAllEdges().forEach(edge => {
+            this.graphVisualizer.UpdateEdgeColor(edge.id, DEFAULT_EDGE_COLOR, this.graphVisualizer.mainVisEdges);
+        });
+        this.currentGraph.GetAllVertices().forEach(vertex => {
+            this.graphVisualizer.UpdateVertexColor(vertex.id, DEFAULT_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
+            this.graphVisualizer.mainVisNodes.update({id: vertex.id, label: vertex.label});
+        });
+
+        let i = 0;
+        const animateStep = () => {
+            if (i >= path.length - 1) {
+                this.graphVisualizer.mainVisNodes.update({
+                    id: path[path.length - 1],
+                    color: DEFAULT_VERTEX_COLOR
+                });
+                this.postmanAnimationTimer = null;
+                console.log("Chinese Postman path visualization complete.");
+                return;
+            }
+
+            const fromVertexId = path[i];
+            const toVertexId = path[i + 1];
+
+            const edge = this.currentGraph.GetEdge(fromVertexId, toVertexId);
+            if (edge) {
+                this.graphVisualizer.UpdateEdgeColor(edge.id, POSTMAN_PATH_EDGE_COLOR, this.graphVisualizer.mainVisEdges);
+            } else {
+                // Fallback for edges that were "duplicated" by CPP but not reflected in Graph.GetEdge
+                // This means the Graph implementation for multi-edges might be insufficient.
+                // For now, we'll log a warning.
+                console.warn(`Edge (${fromVertexId}, ${toVertexId}) not found for Postman visualization. Duplicates might be the issue.`);
+                // As a fallback, try to highlight the nodes if edge can't be found
+                this.graphVisualizer.UpdateVertexColor(fromVertexId, POSTMAN_PATH_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
+                this.graphVisualizer.UpdateVertexColor(toVertexId, POSTMAN_PATH_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
+            }
+
+            // Optional: Animate a "postman" marker
+            // For a simple marker, we can color the current vertex
+            this.graphVisualizer.UpdateVertexColor(fromVertexId, CURRENT_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
+            // Reset previous current vertex color if not the localized one
+            if (i > 0 && path[i - 1] !== this.localizationAlgorithm.GetLocalizedVertex()?.id) {
+                this.graphVisualizer.UpdateVertexColor(path[i - 1], DEFAULT_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
+            }
+
+
+            i++;
+            this.postmanAnimationTimer = setTimeout(animateStep, delayMs);
+        };
+
+        this.postmanAnimationTimer = setTimeout(animateStep, delayMs);
+    }
+
 }
 
 export {

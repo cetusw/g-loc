@@ -34,7 +34,7 @@ class Graph {
         return Array.from(this.vertices.values());
     }
 
-    public AddEdge(fromVertexId: string, toVertexId: string, weight: number): void {
+    public AddEdge(fromVertexId: string, toVertexId: string, weight?: number): void {
         if (fromVertexId === toVertexId) {
             return;
         }
@@ -46,20 +46,25 @@ class Graph {
             return;
         }
 
-        const edgeId = [fromVertexId, toVertexId].sort().join('-');
-        if (this.edges.has(edgeId)) {
+        const newEdge = new Edge(fromVertexId, toVertexId, weight ? weight : 1);
+        if (this.edges.has(newEdge.id)) {
             return;
         }
+        this.edges.set(newEdge.id, newEdge);
 
-        const newEdge = new Edge(edgeId, fromVertexId, toVertexId, weight);
-        this.edges.set(edgeId, newEdge);
+        if (!this.adjacencyList.has(fromVertexId)) {
+            this.adjacencyList.set(fromVertexId, new Map());
+        }
+        if (!this.adjacencyList.has(toVertexId)) {
+            this.adjacencyList.set(toVertexId, new Map());
+        }
 
         this.adjacencyList.get(fromVertexId)?.set(toVertexId, newEdge);
         this.adjacencyList.get(toVertexId)?.set(fromVertexId, newEdge);
     }
 
     public GetEdge(fromVertexId: string, toVertexId: string): Edge | undefined {
-        const edgeId = [fromVertexId, toVertexId].sort().join('-');
+        const edgeId = new Edge(fromVertexId, toVertexId).id;
         return this.edges.get(edgeId);
     }
 
@@ -93,6 +98,86 @@ class Graph {
         });
     }
 
+    ExistEdge(fromVertexId: string, toVertexId: string): boolean {
+        const canonicalEdge = new Edge(fromVertexId, toVertexId);
+        return this.edges.has(canonicalEdge.id);
+    }
+
+    Dist(start: string, end: string): number {
+        if (start === end) {
+            return 0;
+        }
+        const queue: { vertexId: string, distance: number }[] = [{ vertexId: start, distance: 0 }];
+        const visited: Set<string> = new Set<string>();
+        visited.add(start);
+
+        while (queue.length > 0) {
+            const { vertexId, distance } = queue.shift()!;
+            if (vertexId === end) {
+                return distance;
+            }
+            for (const neighborId of this.adjacencyList.get(vertexId)?.keys() || []) {
+                if (!visited.has(neighborId)) {
+                    visited.add(neighborId);
+                    queue.push({ vertexId: neighborId, distance: distance + 1 });
+                }
+            }
+        }
+        return Infinity;
+    }
+
+    Path(start: string, end: string): string[] {
+        const queue: { vertexId: string, path: string[] }[] = [{ vertexId: start, path: [start] }];
+        const visited: Set<string> = new Set<string>();
+        visited.add(start);
+
+        while (queue.length > 0) {
+            const { vertexId, path } = queue.shift()!;
+            if (vertexId === end) {
+                return path;
+            }
+            for (const neighborId of this.adjacencyList.get(vertexId)?.keys() || []) {
+                if (!visited.has(neighborId)) {
+                    visited.add(neighborId);
+                    queue.push({ vertexId: neighborId, path: [...path, neighborId] });
+                }
+            }
+        }
+        return [];
+    }
+
+    Contract(centerVertexId: string, vertexToContractId: string): void {
+        if (!this.vertices.has(centerVertexId) || !this.vertices.has(vertexToContractId)) {
+            return;
+        }
+        if (centerVertexId === vertexToContractId) {
+            return;
+        }
+
+        const neighborsOfContracted = Array.from(this.adjacencyList.get(vertexToContractId)?.keys() || []);
+
+        for (const neighborId of neighborsOfContracted) {
+            if (neighborId === centerVertexId) {
+                continue;
+            }
+
+            const edgeToRemove = new Edge(vertexToContractId, neighborId);
+            this.edges.delete(edgeToRemove.id);
+
+            this.adjacencyList.get(neighborId)?.delete(vertexToContractId);
+            this.adjacencyList.get(vertexToContractId)?.delete(neighborId);
+
+            if (!this.ExistEdge(centerVertexId, neighborId)) {
+                this.AddEdge(centerVertexId, neighborId);
+            }
+        }
+
+        this.vertices.delete(vertexToContractId);
+        this.adjacencyList.delete(vertexToContractId);
+
+        this.UpdateVertexDegrees();
+    }
+
     public ToVisData(): { nodes: VisNode[]; edges: VisEdge[] } {
         const visNodes: VisNode[] = [];
         this.vertices.forEach(vertex => {
@@ -110,6 +195,30 @@ class Graph {
         });
 
         return { nodes: visNodes, edges: visEdges };
+    }
+
+    public DeleteEdgeFromAdjacencyListByKey(fromVertexId: string, toVertexId: string): void {
+        this.adjacencyList.get(fromVertexId)?.delete(toVertexId);
+    }
+
+    public DeleteEdgeFromEdges(edgeId: string): void {
+        this.edges.delete(edgeId);
+    }
+
+    public SetEdgeToAdjacencyListByKey(fromVertexId: string, toVertexId: string, edge: Edge): void {
+        this.adjacencyList.get(fromVertexId)?.set(toVertexId, edge);
+    }
+
+    public SetEdgeToAdjacencyList(vertexId: string, edge: Map<string, Edge>): void {
+        this.adjacencyList.set(vertexId, edge);
+    }
+
+    public SetEdgeToEdges(edgeId: string, edge: Edge): void {
+        this.edges.set(edgeId, edge);
+    }
+
+    public HasVertex(vertex: string): boolean {
+        return this.adjacencyList.has(vertex)
     }
 }
 

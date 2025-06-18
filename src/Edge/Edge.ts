@@ -5,11 +5,15 @@ class Edge {
     public weight: number;
     public isTraversed: boolean = false;
 
-    constructor(id: string, from: string, to: string, weight: number) {
-        this.id = id;
+    constructor(from: string, to: string, weight?: number) {
+        this.id = [from, to].sort().join('-');
         this.fromVertexId = from;
         this.toVertexId = to;
-        this.weight = weight;
+        this.weight = weight ? weight : 1;
+    }
+
+    Equals(other: Edge): boolean {
+        return this.fromVertexId === other.fromVertexId && this.toVertexId === other.toVertexId;
     }
 }
 
