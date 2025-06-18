@@ -20,7 +20,7 @@ const COMMON_GRAPH_OPTIONS = {
         font: { size: 12, color: '#333' },
         borderWidth: 2
     },
-    physics: { enabled: true, stabilization: { iterations: 2000 } }, // Физика для основного графа
+    physics: { enabled: true, stabilization: { iterations: 2000 } },
     layout: { improvedLayout: true },
     interaction: { dragNodes: true, zoomView: true, navigationButtons: true }
 };
