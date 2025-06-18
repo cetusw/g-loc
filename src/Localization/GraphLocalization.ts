@@ -34,7 +34,7 @@ class GraphLocalization {
         console.log("Initial hypotheses IDs:", this.hypotheses.map(h => h.vertexId).join(', '));
     }
 
-    public Move(observedFromVertexDegree: number, observedEdgeWeight: number, observedToVertexDegree: number, currentVertex: Vertex): string | null {
+    public Move(observedFromVertexDegree: number, observedEdgeWeight: number, observedToVertexDegree: number, currentVertex: Vertex, allVerticesTraversed: boolean): string | null {
         this.observedSequence.push({
             fromVertexDegree: observedFromVertexDegree,
             edgeWeight: observedEdgeWeight,
@@ -53,7 +53,7 @@ class GraphLocalization {
             console.log("Localization failed: No hypotheses left.");
             this.localizedVertex = null;
             return null;
-        } else if (remainingHypotheses.length === this.graph.numVertices) {
+        } else if (remainingHypotheses.length === this.graph.numVertices && allVerticesTraversed) {
             this.localizedVertex = currentVertex;
             console.log(`Robot localized at vertex: ${this.localizedVertex.id}`);
             return this.localizedVertex.id;

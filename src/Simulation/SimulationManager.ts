@@ -7,7 +7,6 @@ import {GraphLocalization} from '../Localization/GraphLocalization.js';
 import {DepthFirstSearch} from '../DepthFirstSearch/DepthFirstSearch.js';
 import {
     TRAVERSED_EDGE_COLOR,
-    DEFAULT_EDGE_COLOR,
     CURRENT_VERTEX_COLOR,
     VISITED_VERTEX_COLOR,
     LOCALIZED_VERTEX_COLOR,
@@ -192,10 +191,7 @@ class SimulationManager {
         const toVertex = this.currentGraph.GetVertex(toId)!;
         const edge = this.currentGraph.GetEdge(fromId, toId)!;
 
-        this.graphVisualizer.UpdateVertexColor(fromVertex.id, VISITED_VERTEX_COLOR, this.graphVisualizer.mainVisNodes);
         fromVertex.isVisited = true;
-
-        this.graphVisualizer.UpdateEdgeColor(edge.id, TRAVERSED_EDGE_COLOR, this.graphVisualizer.mainVisEdges);
         edge.isTraversed = true;
 
         this.currentRobotVertex = toVertex;
@@ -206,7 +202,9 @@ class SimulationManager {
         this.graphVisualizer.AddOrUpdateRobotVertex(fromVertex, VISITED_VERTEX_COLOR);
         this.graphVisualizer.AddOrUpdateRobotEdge(fromVertex.id, toVertex.id, edge.weight, TRAVERSED_EDGE_COLOR);
 
-        const localizedVertexId = this.localizationAlgorithm.Move(fromVertex.degree, edge.weight, toVertex.degree, toVertex);
+        const allVerticesTraversed = this.currentGraph.GetAllVertices().every(vertex => vertex.isVisited);
+
+        const localizedVertexId = this.localizationAlgorithm.Move(fromVertex.degree, edge.weight, toVertex.degree, toVertex, allVerticesTraversed);
 
         this.UpdateHypothesisVisualization();
 
@@ -241,20 +239,10 @@ class SimulationManager {
                 const isActiveHypothesis = currentHypotheses.some(hypo => hypo.vertexId === vertex.id);
                 if (isActiveHypothesis) {
                     nodeColor = HYPOTHESIS_VERTEX_COLOR;
-                } else if (vertex.isVisited) {
-                    nodeColor = VISITED_VERTEX_COLOR;
                 }
             }
             this.graphVisualizer.UpdateVertexColor(vertex.id, nodeColor, this.graphVisualizer.mainVisNodes);
             this.graphVisualizer.mainVisNodes.update({id: vertex.id, label: `${vertex.label} (D:${vertex.degree})`});
-        });
-
-        this.currentGraph.GetAllEdges().forEach(edge => {
-            if (edge.isTraversed) {
-                this.graphVisualizer.UpdateEdgeColor(edge.id, TRAVERSED_EDGE_COLOR, this.graphVisualizer.mainVisEdges);
-            } else {
-                this.graphVisualizer.UpdateEdgeColor(edge.id, DEFAULT_EDGE_COLOR, this.graphVisualizer.mainVisEdges);
-            }
         });
     }
 
