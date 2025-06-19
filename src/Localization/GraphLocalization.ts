@@ -45,7 +45,7 @@ class GraphLocalization {
 
         const remainingHypotheses = this.hypotheses;
 
-        if (remainingHypotheses.length === 1) {
+        if (remainingHypotheses.length === 1 || allVerticesTraversed) {
             this.localizedVertex = this.graph.GetVertex(remainingHypotheses[0].vertexId)!;
             console.log(`Robot localized at vertex: ${this.localizedVertex.id}`);
             return this.localizedVertex.id;
